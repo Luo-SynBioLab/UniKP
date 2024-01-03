@@ -15,18 +15,39 @@ rdBase.DisableLog('rdApp.*')
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-def split(sm): # ChatGPT version
-    '''
-    Function: Split SMILES into words. Care for Cl, Br, Si, Se, Na, etc.
-    Input: A SMILES
-    Output: A string with space between words
-    '''
-    patterns = ['%', 'C[lau]', 'B[eir]', 'S[eiSr]', 'N[ai]', 'R[ab]', 'Xe', 'Li', 'As', 'Ag', 'Au', 'M[gMn]', 'Te', 'Zn', 'si', 'se', 'te', 'He', '[+-][234]', 'Kr', 'Fe']
-    regex_pattern = '|'.join(f'({p})' for p in patterns)
-    return ' '.join(filter(None, re.split(f'({regex_pattern})', sm)))
+def split_refactored(sm): # ChatGPT version
+    """
+    Split SMILES into words. Handles specific chemical elements or characters.
+    
+    Args:
+    - sm (str): A SMILES string
+    
+    Returns:
+    - str: A string with space-separated words
+    """
+    special_cases = {'Cl', 'Br', 'Ca', 'Cu', 'Be', 'Ba', 'Bi', 'Si', 'Se', 'Sr',
+                     'Na', 'Ni', 'Rb', 'Ra', 'Xe', 'Li', 'Al', 'As', 'Ag', 'Au',
+                     'Mg', 'Mn', 'Te', 'Zn', 'Si', 'Se', 'Te', 'He', '+2', '+3',
+                     '+4', '-2', '-3', '-4', 'Kr', 'Fe'}
+
+    i = 0
+    arr = []
+    while i < len(sm):
+        found = False
+        for length in range(3, 1, -1):  # Check for special cases with length > 1
+            if sm[i:i + length] in special_cases:
+                arr.append(sm[i:i + length])
+                i += length
+                found = True
+                break
+        if not found:
+            arr.append(sm[i])
+            i += 1
+
+    return ' '.join(arr)
 
 # Split SMILES into words
-def split_ori(sm):
+def split(sm):
     '''
     function: Split SMILES into words. Care for Cl, Br, Si, Se, Na etc.
     input: A SMILES
