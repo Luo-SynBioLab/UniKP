@@ -1,9 +1,13 @@
+from UniKP.utils import Seq_to_vec, smiles_to_vec
+
 from sklearn.ensemble import ExtraTreesRegressor
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
 import pickle
 import math
+
+
 
 
 def Kcat_predict(Ifeature, Label):
@@ -19,27 +23,22 @@ def Kcat_predict(Ifeature, Label):
         All_pre_label.extend(Pre_label)
         All_real_label.extend(Test_label)
     res = pd.DataFrame({'Value': All_real_label, 'Predict_Label': All_pre_label})
-    res.to_excel('pH/pH_Kcat_5_cv.xlsx')
+    res.to_excel('Kcat_Km/Kcat_Km_5_cv.xlsx')
 
 
 if __name__ == '__main__':
-    # Dataset Load
-    database = np.array(pd.read_excel('pH/Generated_pH_unified_smiles_636.xlsx')).T
-    sequence = database[1]
-    smiles = database[3]
-    pH = database[5].reshape([len(smiles), 1])
-    Label = database[4]
-    for i in range(len(Label)):
-        Label[i] = math.log(Label[i], 10)
-    print(max(Label), min(Label))
-    # Feature Extractor
-    # smiles_input = smiles_to_vec(smiles)
-    # sequence_input = Seq_to_vec(sequence)
-    # print(sequence_input.shape, sequence_input.shape, pH.shape)
-    # feature = np.concatenate((smiles_input, sequence_input, pH), axis=1)
-    # with open("pH/features_636_pH_PreKcat.pkl", "wb") as f:
-    #     pickle.dump(feature, f)
-    with open("pH/features_636_pH_PreKcat.pkl", "rb") as f:
-        feature = pickle.load(f)
-    # Modelling
+    res = np.array(pd.read_excel('Kcat_Km/kcat_km_samples.xlsx', sheet_name='main')).T
+    Smiles = res[1]
+    sequences = res[2]
+    Value = res[0]
+    for i in range(len(Value)):
+        Value[i] = math.log(Value[i], 10)
+    print(max(Value), min(Value))
+    smiles_input = smiles_to_vec(Smiles)
+    sequence_input = Seq_to_vec(sequences)
+    feature = np.concatenate((smiles_input, sequence_input), axis=1)
+    with open("Kcat_Km/Kcat_Km_features_910.pkl", "wb") as f:
+        pickle.dump(feature, f)
+    feature = np.array(feature)
+    Label = np.array(Value)
     Kcat_predict(feature, Label)

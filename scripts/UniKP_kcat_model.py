@@ -1,23 +1,8 @@
-import torch
-from build_vocab import WordVocab
-from pretrain_trfm import TrfmSeq2seq
-from utils import split
 import json
-from transformers import T5EncoderModel, T5Tokenizer
-import re
-import gc
-from sklearn import metrics
 from sklearn.ensemble import ExtraTreesRegressor
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import KFold
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
-import random
 import pickle
 import math
-from sklearn.model_selection import KFold
 
 
 def Kcat_predict(Ifeature, Label):

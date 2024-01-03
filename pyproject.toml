@@ -1,0 +1,56 @@
+[build-system]
+requires = ["poetry-core>=1.0.0,<2.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "UniKP"
+version = "0.0.1"
+description = "UniKP code."
+authors = ["auther <emall@address>"]
+
+readme = "README.md"
+
+repository = "https://github.com/Luo-SynBioLab/UniKP"
+classifiers = [
+    "Topic :: Scientific/Engineering :: Biochemistry",
+    "Topic :: Scientific/Engineering :: Protein Engineering"
+]
+
+packages = [
+    { include = "UniKP" },
+]
+
+[tool.poetry.dependencies]
+
+python = ">=3.9"
+pandas = "*"
+tqdm = "^4.66.1"
+rdkit = "^2023.9.3"
+transformers = "^4.36.2"
+SentencePiece = "^0.1.99"
+scikit-learn = "*"
+openpyxl ="3.1.2"
+
+numpy = "*"
+
+torch = { version = "*", allow-prereleases = false, source = "pytorch"}
+torchvision = { version = "*", allow-prereleases = false, source = "pytorch" }
+torchaudio = { version = "*", allow-prereleases = false, source = "pytorch" }
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+
+
+[tool.black]
+line-length = 79
+target-version = ['py38']
+skip-string-normalization = true
+
+include = '''
+/(
+  | UniKP
+)/
+'''
+
+exclude = "DLPacker/data"

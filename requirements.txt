@@ -1,8 +1,0 @@
-numpy
-pandas
-tqdm
-rdkit
-transformers
-SentencePiece
-scikit-learn
-openpyxl

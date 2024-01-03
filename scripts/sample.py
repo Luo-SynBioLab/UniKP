@@ -1,4 +1,4 @@
-from enumerator import SmilesEnumerator
+from UniKP.enumerator import SmilesEnumerator
 
 sme = SmilesEnumerator()
 smiles = ''
