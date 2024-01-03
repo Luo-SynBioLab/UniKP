@@ -7,6 +7,9 @@ import torch.nn as nn
 from rdkit import Chem
 from rdkit import rdBase
 
+import hashlib
+import requests
+import zipfile
 
 import numpy as np
 
@@ -14,6 +17,121 @@ rdBase.DisableLog('rdApp.*')
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+# urls from weigts
+DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL = 'https://zenodo.org/records/4644188/files/prot_t5_xl_uniref50.zip'
+DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5 = 'ab11a7eddfbaff5784effd41380b482a'
+
+DEFAULT_UNIKP_KM_URL='https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20Km.pkl'
+DEFAULT_UNIKP_KCAT_URL='https://huggingface.co/HanselYu/UniKP/blob/main/UniKP%20for%20kcat.pkl'
+DEFAULT_UNIKP_KCAT_KM_URL='https://huggingface.co/HanselYu/UniKP/blob/main/UniKP%20for%20kcat_Km.pkl'
+
+CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT=os.getenv('PROT_T5_XL_UNIREF50_WEIGHT')
+
+CUSTOMIZED_WEIGHTS_DIR=os.getenv('UNIKP_PRETRAINED_WEIGHT')
+
+class FileDownloader:
+    def __init__(self, url, save_dir, md5sum=None):
+        self.url = url
+        self.save_dir = save_dir
+        self.md5sum = md5sum
+
+    def download_file(self):
+        try:
+            downloaded_file = self._download()
+            if downloaded_file:
+                if downloaded_file.lower().endswith('.zip'):
+                    self._extract_zip(downloaded_file)
+                else:
+                    return self._handle_file(downloaded_file)
+            else:
+                return f"Failed to download file from {self.url}"
+        except Exception as e:
+            return f"An error occurred: {str(e)}"
+
+    def _download(self):
+        response = requests.get(self.url, stream=True)
+        if response.status_code == 200:
+            if not os.path.exists(self.save_dir):
+                os.makedirs(self.save_dir)
+
+            file_name = os.path.join(self.save_dir, self.url.split('/')[-1])
+
+            with open(file_name, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        file.write(chunk)
+            return file_name
+        return None
+
+    def _extract_zip(self, file_name):
+        unzip_dir = os.path.splitext(file_name)[0]
+        with zipfile.ZipFile(file_name, 'r') as zip_ref:
+            zip_ref.extractall(unzip_dir)
+        os.remove(file_name)
+        return f"File downloaded, extracted, and ZIP archive removed from {unzip_dir}"
+
+    def _handle_file(self, file_name):
+        if self.md5sum and not self.validate_md5(file_name):
+            os.remove(file_name)
+            return "MD5 checksum validation failed. File deleted."
+        return f"File downloaded to {file_name}"
+
+    def validate_md5(self, file_path):
+        try:
+            hasher = hashlib.md5()
+            with open(file_path, 'rb') as file:
+                for chunk in iter(lambda: file.read(4096), b""):
+                    hasher.update(chunk)
+            calculated_md5 = hasher.hexdigest()
+            return calculated_md5 == self.md5sum
+        except Exception as e:
+            print(f"Error while calculating MD5: {str(e)}")
+            return False
+
+def fetch_weights():
+
+    # fetch prot t5 xl uniref50
+    if CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT:
+        if not os.path.exists(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT):
+            os.makedirs(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT,exist_ok=True)
+        DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT
+    else:
+        DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = os.path.join(dir_path, 'weights', 'prot_t5_xl_uniref50')
+
+    if not os.path.exists(os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT, 'pytorch_model.bin')):
+        _basename=os.path.basename(DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL)
+        print(f'Downloading {_basename} ...')
+        downloader=FileDownloader(
+            url=DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL, 
+            save_dir=DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,
+            md5sum=DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5
+        )
+        downloader.download_file()
+    else:
+        print(f'Already existed: {os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT, "pytorch_model.bin")}')
+
+    # fetch unikp weights
+    if CUSTOMIZED_WEIGHTS_DIR:
+        if not os.path.exists(CUSTOMIZED_WEIGHTS_DIR):
+            os.makedirs(CUSTOMIZED_WEIGHTS_DIR,exist_ok=True)
+        DEFAULT_UNIKP_WEIGHT=CUSTOMIZED_WEIGHTS_DIR
+    else:
+        DEFAULT_UNIKP_WEIGHT = os.path.join(dir_path, 'weights', 'UniKP')
+
+    for url in [DEFAULT_UNIKP_KM_URL,DEFAULT_UNIKP_KCAT_URL, DEFAULT_UNIKP_KCAT_KM_URL]:
+        _basename=os.path.basename(url)
+
+        if os.path.exists(os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)):
+            print(f'Already existed: {os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)}')
+            continue
+        
+        print(f'Downloading {_basename} ...')
+        downloader=FileDownloader(
+            url=url,
+            save_dir=DEFAULT_UNIKP_WEIGHT
+        )
+        downloader.download_file()
+        
 
 def split_refactored(sm): # ChatGPT version
     """
@@ -330,3 +448,5 @@ def get_lds_kernel_window(kernel, ks, sigma):
         laplace = lambda x: np.exp(-abs(x) / sigma) / (2. * sigma)
         kernel_window = list(map(laplace, np.arange(-half_ks, half_ks + 1))) / max(map(laplace, np.arange(-half_ks, half_ks + 1)))
     return kernel_window
+
+fetch_weights()
