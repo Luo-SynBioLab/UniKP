@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit import rdBase
 
 import hashlib
-import requests
+import pooch
 import zipfile
 
 import numpy as np
@@ -18,12 +18,14 @@ rdBase.DisableLog('rdApp.*')
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 # urls from weigts
-DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL = 'https://zenodo.org/records/4644188/files/prot_t5_xl_uniref50.zip'
-DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5 = 'ab11a7eddfbaff5784effd41380b482a'
+DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL = 'doi:10.5281/zenodo.4644187/prot_t5_xl_uniref50.zip'
+DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5 = 'md5:ab11a7eddfbaff5784effd41380b482a'
 
-DEFAULT_UNIKP_KM_URL='https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20Km.pkl'
-DEFAULT_UNIKP_KCAT_URL='https://huggingface.co/HanselYu/UniKP/blob/main/UniKP%20for%20kcat.pkl'
-DEFAULT_UNIKP_KCAT_KM_URL='https://huggingface.co/HanselYu/UniKP/blob/main/UniKP%20for%20kcat_Km.pkl'
+DEFAULT_UNIKP_URL={
+    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20Km.pkl': 'md5:3e5e29dfabb0648448cb2fcd6f7cedd5',
+    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat.pkl':'md5:bf4e2c87deec0da8359ecb767e562bf2',
+    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat_Km.pkl': 'md5:bc598e880e0893bf25f8bfb27074ccac'
+    }
 
 CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT=os.getenv('PROT_T5_XL_UNIREF50_WEIGHT')
 
@@ -41,27 +43,20 @@ class FileDownloader:
             if downloaded_file:
                 if downloaded_file.lower().endswith('.zip'):
                     self._extract_zip(downloaded_file)
-                else:
-                    return self._handle_file(downloaded_file)
             else:
                 return f"Failed to download file from {self.url}"
         except Exception as e:
             return f"An error occurred: {str(e)}"
 
     def _download(self):
-        response = requests.get(self.url, stream=True)
-        if response.status_code == 200:
-            if not os.path.exists(self.save_dir):
-                os.makedirs(self.save_dir)
-
-            file_name = os.path.join(self.save_dir, self.url.split('/')[-1])
-
-            with open(file_name, 'wb') as file:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        file.write(chunk)
-            return file_name
-        return None
+        _basename=os.path.basename(self.url).split('?')[0]
+        downloaded=pooch.retrieve(
+            url=self.url,
+            known_hash=self.md5sum,
+            fname=_basename.replace('%20', '_'),
+            path=self.save_dir,
+            progressbar=True)
+        return downloaded
 
     def _extract_zip(self, file_name):
         unzip_dir = os.path.splitext(file_name)[0]
@@ -69,24 +64,6 @@ class FileDownloader:
             zip_ref.extractall(unzip_dir)
         os.remove(file_name)
         return f"File downloaded, extracted, and ZIP archive removed from {unzip_dir}"
-
-    def _handle_file(self, file_name):
-        if self.md5sum and not self.validate_md5(file_name):
-            os.remove(file_name)
-            return "MD5 checksum validation failed. File deleted."
-        return f"File downloaded to {file_name}"
-
-    def validate_md5(self, file_path):
-        try:
-            hasher = hashlib.md5()
-            with open(file_path, 'rb') as file:
-                for chunk in iter(lambda: file.read(4096), b""):
-                    hasher.update(chunk)
-            calculated_md5 = hasher.hexdigest()
-            return calculated_md5 == self.md5sum
-        except Exception as e:
-            print(f"Error while calculating MD5: {str(e)}")
-            return False
 
 def fetch_weights():
 
@@ -118,8 +95,8 @@ def fetch_weights():
     else:
         DEFAULT_UNIKP_WEIGHT = os.path.join(dir_path, 'weights', 'UniKP')
 
-    for url in [DEFAULT_UNIKP_KM_URL,DEFAULT_UNIKP_KCAT_URL, DEFAULT_UNIKP_KCAT_KM_URL]:
-        _basename=os.path.basename(url)
+    for url,md5 in DEFAULT_UNIKP_URL.items():
+        _basename=os.path.basename(url).replace('%20', '_')
 
         if os.path.exists(os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)):
             print(f'Already existed: {os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)}')
@@ -127,7 +104,8 @@ def fetch_weights():
         
         print(f'Downloading {_basename} ...')
         downloader=FileDownloader(
-            url=url,
+            url=f'{url}?download=true',
+            md5sum=md5,
             save_dir=DEFAULT_UNIKP_WEIGHT
         )
         downloader.download_file()
