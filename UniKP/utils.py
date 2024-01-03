@@ -90,15 +90,11 @@ def fetch_weights():
             md5sum=DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5
         )
         downloader.download_file()
-    else:
-        print(f'Already existed: {os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,"prot_t5_xl_uniref50","prot_t5_xl_uniref50", "pytorch_model.bin")}')
 
     # fetch unikp weights
     for url,md5 in DEFAULT_UNIKP_WEIGTHS_URL.items():
         _basename=os.path.basename(url).replace('%20', '_')
-
         if os.path.exists(os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)):
-            print(f'Already existed: {os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)}')
             continue
         
         print(f'Downloading {_basename} ...')
