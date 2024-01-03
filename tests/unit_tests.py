@@ -16,10 +16,10 @@ class TestSplitFunction(unittest.TestCase):
             #     continue
             original_result = split(row['smiles'])
             refactored_result = split_refactored(row['smiles'])
-            print('-='*60)
-            print(f'| {row["smiles"]}')
-            print(f'- {original_result}\n+ {refactored_result}')
-            print('-='*60)
+            # print('-='*60)
+            # print(f'| {row["smiles"]}')
+            # print(f'- {original_result}\n+ {refactored_result}')
+            # print('-='*60)
             self.assertEqual(original_result, refactored_result, f'Failed at row {index + 2}: {row["smiles"]}')
 
 
