@@ -7,7 +7,6 @@ import torch.nn as nn
 from rdkit import Chem
 from rdkit import rdBase
 
-import hashlib
 import pooch
 import zipfile
 
@@ -17,11 +16,11 @@ rdBase.DisableLog('rdApp.*')
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-# urls from weigts
+# urls from weights
 DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL = 'doi:10.5281/zenodo.4644187/prot_t5_xl_uniref50.zip'
 DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5 = 'md5:ab11a7eddfbaff5784effd41380b482a'
 
-DEFAULT_UNIKP_URL={
+DEFAULT_UNIKP_WEIGTHS_URL={
     'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20Km.pkl': 'md5:3e5e29dfabb0648448cb2fcd6f7cedd5',
     'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat.pkl':'md5:bf4e2c87deec0da8359ecb767e562bf2',
     'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat_Km.pkl': 'md5:bc598e880e0893bf25f8bfb27074ccac'
@@ -29,7 +28,21 @@ DEFAULT_UNIKP_URL={
 
 CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT=os.getenv('PROT_T5_XL_UNIREF50_WEIGHT')
 
+
+if CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT:
+    if not os.path.exists(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT):
+        os.makedirs(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT,exist_ok=True)
+    DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT
+else:
+    DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = os.path.join(dir_path, 'weights', 'prot_t5_xl_uniref50')
+
 CUSTOMIZED_WEIGHTS_DIR=os.getenv('UNIKP_PRETRAINED_WEIGHT')
+if CUSTOMIZED_WEIGHTS_DIR:
+    if not os.path.exists(CUSTOMIZED_WEIGHTS_DIR):
+        os.makedirs(CUSTOMIZED_WEIGHTS_DIR,exist_ok=True)
+    DEFAULT_UNIKP_WEIGHT=CUSTOMIZED_WEIGHTS_DIR
+else:
+    DEFAULT_UNIKP_WEIGHT = os.path.join(dir_path, 'weights', 'UniKP')
 
 class FileDownloader:
     def __init__(self, url, save_dir, md5sum=None):
@@ -68,14 +81,7 @@ class FileDownloader:
 def fetch_weights():
 
     # fetch prot t5 xl uniref50
-    if CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT:
-        if not os.path.exists(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT):
-            os.makedirs(CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT,exist_ok=True)
-        DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT
-    else:
-        DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT = os.path.join(dir_path, 'weights', 'prot_t5_xl_uniref50')
-
-    if not os.path.exists(os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT, 'pytorch_model.bin')):
+    if not os.path.exists(os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,'prot_t5_xl_uniref50','prot_t5_xl_uniref50', 'pytorch_model.bin')):
         _basename=os.path.basename(DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL)
         print(f'Downloading {_basename} ...')
         downloader=FileDownloader(
@@ -85,17 +91,10 @@ def fetch_weights():
         )
         downloader.download_file()
     else:
-        print(f'Already existed: {os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT, "pytorch_model.bin")}')
+        print(f'Already existed: {os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,"prot_t5_xl_uniref50","prot_t5_xl_uniref50", "pytorch_model.bin")}')
 
     # fetch unikp weights
-    if CUSTOMIZED_WEIGHTS_DIR:
-        if not os.path.exists(CUSTOMIZED_WEIGHTS_DIR):
-            os.makedirs(CUSTOMIZED_WEIGHTS_DIR,exist_ok=True)
-        DEFAULT_UNIKP_WEIGHT=CUSTOMIZED_WEIGHTS_DIR
-    else:
-        DEFAULT_UNIKP_WEIGHT = os.path.join(dir_path, 'weights', 'UniKP')
-
-    for url,md5 in DEFAULT_UNIKP_URL.items():
+    for url,md5 in DEFAULT_UNIKP_WEIGTHS_URL.items():
         _basename=os.path.basename(url).replace('%20', '_')
 
         if os.path.exists(os.path.join(DEFAULT_UNIKP_WEIGHT,_basename)):
@@ -368,7 +367,7 @@ def smiles_to_vec(Smiles):
     return X
 
 
-def Seq_to_vec(Sequence, prot_t5_xl_uniref50='prot_t5_xl_uniref50'):
+def Seq_to_vec(Sequence, prot_t5_xl_uniref50=os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,'prot_t5_xl_uniref50','prot_t5_xl_uniref50')):
     from transformers import T5EncoderModel, T5Tokenizer
     for i in range(len(Sequence)):
         if len(Sequence[i]) > 1000:
