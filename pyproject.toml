@@ -36,13 +36,9 @@ pooch  = "^1.8.0"
 numpy = "*"
 click = "*"
 
-torch = { version = "*", allow-prereleases = false, source = "pytorch"}
-torchvision = { version = "*", allow-prereleases = false, source = "pytorch" }
-torchaudio = { version = "*", allow-prereleases = false, source = "pytorch" }
-
-[[tool.poetry.source]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cpu"
+torch = { version = "*", allow-prereleases = false}
+torchvision = { version = "*", allow-prereleases = false}
+torchaudio = { version = "*", allow-prereleases = false}
 
 
 [tool.black]
