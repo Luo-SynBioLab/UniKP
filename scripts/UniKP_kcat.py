@@ -1,3 +1,6 @@
+import os
+from UniKP.build_vocab import WordVocab
+from UniKP.pretrain_trfm import TrfmSeq2seq
 from UniKP.utils import Seq_to_vec, smiles_to_vec
 import json
 from sklearn.ensemble import ExtraTreesRegressor
@@ -7,7 +10,9 @@ import pandas as pd
 import random
 import pickle
 import math
+import torch
 
+script_path = os.path.dirname(os.path.realpath(__file__))
 
 
 def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organism_new, Substrate_new, Type_new):
@@ -34,7 +39,8 @@ def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organi
 
 if __name__ == '__main__':
     # Dataset Load
-    with open('Kcat_combination_0918_wildtype_mutant.json', 'r') as file:
+    device=torch.device('mps')
+    with open(os.path.join(script_path,'..','datasets','Kcat_combination_0918_wildtype_mutant.json'), 'r') as file:
         datasets = json.load(file)
     # print(len(datasets))
     sequence = [data['Sequence'] for data in datasets]
@@ -51,10 +57,10 @@ if __name__ == '__main__':
             Label[i] = math.log(Label[i], 10)
     print(max(Label), min(Label))
     # Feature Extractor
-    smiles_input = smiles_to_vec(Smiles)
-    sequence_input = Seq_to_vec(sequence)
+    smiles_input = smiles_to_vec(Smiles, device=device)
+    sequence_input = Seq_to_vec(sequence, device=device)
     feature = np.concatenate((smiles_input, sequence_input), axis=1)
-    with open("PreKcat_new/features_16838_PreKcat.pkl", "wb") as f:
+    with open(os.path.join(script_path,'..','retrained','features_16838_PreKcat.pkl'), "wb") as f:
         pickle.dump(feature, f)
     Label = np.array(Label)
     # Input dataset
