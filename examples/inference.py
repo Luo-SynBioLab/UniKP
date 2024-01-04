@@ -2,7 +2,7 @@
 import torch
 from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
-from UniKP.utils import smiles_to_vec, Seq_to_vec, DEFAULT_UNIKP_WEIGHT
+from UniKP.utils import smiles_to_vec, Seq_to_vec, DEFAULT_UNIKP_WEIGHT, device_picker
 
 import os
 import numpy as np
@@ -10,6 +10,7 @@ import pandas as pd
 import pickle
 import math
 import click
+
 
 @click.command()
 @click.option('-s','--sequence', help='Protein Squence input')
@@ -20,12 +21,7 @@ def main(sequence,smiles,weight,device):
     sequences = [sequence]
     Smiles = [smiles]
 
-    if device.startswith('cuda') and torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif device.startswith('mps') and torch.backends.mps.is_available() and torch.backends.mps.is_built():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
+    device=device_picker()
 
     smiles_vec = smiles_to_vec(Smiles,device=device)
     seq_vec = Seq_to_vec(sequences,device=device)
@@ -46,8 +42,8 @@ def main(sequence,smiles,weight,device):
     
     Pre_label = model.predict(fused_vector)
     Pre_label_pow = [math.pow(10, Pre_label[i]) for i in range(len(Pre_label))]
-    print(len(Pre_label))
-    res = pd.DataFrame({'sequences': sequences, 'Smiles': Smiles, 'Pre_label': Pre_label})
+    print(len(Pre_label_pow))
+    res = pd.DataFrame({'sequences': sequences, 'Smiles': Smiles, 'Pre_label': Pre_label_pow})
     res.to_excel('Kinetic_parameters_predicted_label.xlsx')
 
 
