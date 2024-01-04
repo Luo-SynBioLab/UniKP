@@ -92,6 +92,7 @@ To use this project, first clone the repo on your device using the command below
          pip install git+https://github.com/YaoYinYing/UniKP.git@pip-installable
 
   - (3). Fetch ProtT5 XL weights and UniKP pretrained weight
+  
          # set costomized download path (optional. If set, write these statements into shell profile like `.bashrc` or `.zshrc`)
          export PROT_T5_XL_UNIREF50_WEIGHT=/path/to/ml/weights/
          export UNIKP_PRETRAINED_WEIGHT=/path/to/ml/weights/

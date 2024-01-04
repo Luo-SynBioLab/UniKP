@@ -3,6 +3,7 @@ from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
 from UniKP.utils import Seq_to_vec, smiles_to_vec,device_picker
 import json
+from joblib import parallel_backend
 from sklearn.ensemble import ExtraTreesRegressor
 import numpy as np
 import pandas as pd
@@ -28,13 +29,15 @@ def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organi
         Training_or_test = np.array(Training_or_test)
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         model = ExtraTreesRegressor()
-        model.fit(Train_data, Train_label)
-        Pre_all_label = model.predict(Ifeature)
-        res = pd.DataFrame({'sequence': sequence_new, 'smiles': Smiles_new, 'ECNumber': ECNumber_new,
-                            'Organism': Organism_new, 'Substrate': Substrate_new, 'Type': Type_new,
-                            'Label': Label, 'Predict_Label': Pre_all_label, 'Training or test': Training_or_test})
+        print(f'Fitting at #{i} round...')
+        with parallel_backend('loky', n_jobs=os.cpu_count()):
+            model.fit(Train_data, Train_label)
+            Pre_all_label = model.predict(Ifeature)
+            res = pd.DataFrame({'sequence': sequence_new, 'smiles': Smiles_new, 'ECNumber': ECNumber_new,
+                                'Organism': Organism_new, 'Substrate': Substrate_new, 'Type': Type_new,
+                                'Label': Label, 'Predict_Label': Pre_all_label, 'Training or test': Training_or_test})
 
-        res.to_excel(str(i+1)+'_all_samples_metrics.xlsx')
+            res.to_excel(str(i+1)+'_all_samples_metrics.xlsx')
 
 
 if __name__ == '__main__':
@@ -59,7 +62,7 @@ if __name__ == '__main__':
     
     # Feature Extractor
     feature_path=os.path.join(script_path,'..','retrained','features_16838_PreKcat.pkl')
-    if os.path.exists(feature_path):
+    if not os.path.exists(feature_path):
         smiles_input = smiles_to_vec(Smiles, device=device)
         sequence_input = Seq_to_vec(sequence, device=device)
         feature = np.concatenate((smiles_input, sequence_input), axis=1)

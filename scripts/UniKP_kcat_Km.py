@@ -2,6 +2,7 @@ import os
 from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
 from UniKP.utils import Seq_to_vec, smiles_to_vec,device_picker
+from joblib import parallel_backend
 
 from sklearn.ensemble import ExtraTreesRegressor
 import numpy as np
@@ -21,10 +22,12 @@ def Kcat_predict(Ifeature, Label):
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         Test_data, Test_label = Ifeature[test_index], Label[test_index]
         model = ExtraTreesRegressor()
-        model.fit(Train_data, Train_label)
-        Pre_label = model.predict(Test_data)
-        All_pre_label.extend(Pre_label)
-        All_real_label.extend(Test_label)
+        print(f'Fitting at #{i} round...')
+        with parallel_backend('loky', n_jobs=os.cpu_count()):
+            model.fit(Train_data, Train_label)
+            Pre_label = model.predict(Test_data)
+            All_pre_label.extend(Pre_label)
+            All_real_label.extend(Test_label)
     res = pd.DataFrame({'Value': All_real_label, 'Predict_Label': All_pre_label})
     res.to_excel('Kcat_Km_5_cv.xlsx')
 
@@ -39,7 +42,7 @@ if __name__ == '__main__':
         Value[i] = math.log(Value[i], 10)
     print(max(Value), min(Value))
     feature_path=os.path.join(script_path,'..','retrained','Kcat_Km_features_910.pkl')
-    if os.path.exists(feature_path):
+    if not os.path.exists(feature_path):
         smiles_input = smiles_to_vec(Smiles, device=device)
         sequence_input = Seq_to_vec(sequences, device=device)
         feature = np.concatenate((smiles_input, sequence_input), axis=1)

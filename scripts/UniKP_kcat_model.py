@@ -2,6 +2,7 @@ import os
 from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
 import json
+from joblib import parallel_backend
 from sklearn.ensemble import ExtraTreesRegressor
 import numpy as np
 import pickle
@@ -13,15 +14,17 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 def Kcat_predict(Ifeature, Label):
     for i in range(5):
         model = ExtraTreesRegressor()
-        model.fit(Ifeature, Label)
-        with open(os.path.join(script_path,'..','retrained',f'kcat_{str(i)}_kcat_model.pkl'), "wb") as f:
-            pickle.dump(model, f)
+        print(f'Fitting at #{i} round...')
+        with parallel_backend('loky', n_jobs=os.cpu_count()):
+            model.fit(Ifeature, Label)
+            with open(os.path.join(script_path,'..','retrained',f'kcat_{str(i)}_model.pkl'), "wb") as f:
+                pickle.dump(model, f)
 
 
 if __name__ == '__main__':
     device=device_picker()
     
-    with open('Kcat_combination_0918_wildtype_mutant.json', 'r') as file:
+    with open(os.path.join(script_path,'..','datasets','Kcat_combination_0918_wildtype_mutant.json'), 'r') as file:
         datasets = json.load(file)
     # print(len(datasets))
     Label = [float(data['Value']) for data in datasets]

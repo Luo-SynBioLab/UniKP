@@ -1,6 +1,7 @@
 import os
 from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
+from joblib import parallel_backend
 import numpy as np
 from sklearn.ensemble import ExtraTreesRegressor
 
@@ -22,13 +23,15 @@ def Kcat_predict(Ifeature_ini, Label_ini):
     Ifeature, Ifeature_test, Label, Label_test = train_test_split(Ifeature_ini, Label_ini, test_size=0.2,
                                                                   random_state=Myseed)
     model = ExtraTreesRegressor()
-    model.fit(Ifeature, Label)
-    Pre_label = model.predict(Ifeature_test)
-    Pcc = np.corrcoef(Label_test, Pre_label)[1][0]
-    RMSE = np.sqrt(mean_squared_error(Label_test, Pre_label))
-    MAE = mean_absolute_error(Label_test, Pre_label)
-    r2 = r2_score(Label_test, Pre_label)
-    print(r2, Pcc, RMSE, MAE)
+    
+    with parallel_backend('loky', n_jobs=os.cpu_count()):
+        model.fit(Ifeature, Label)
+        Pre_label = model.predict(Ifeature_test)
+        Pcc = np.corrcoef(Label_test, Pre_label)[1][0]
+        RMSE = np.sqrt(mean_squared_error(Label_test, Pre_label))
+        MAE = mean_absolute_error(Label_test, Pre_label)
+        r2 = r2_score(Label_test, Pre_label)
+        print(r2, Pcc, RMSE, MAE)
 
 
 if __name__ == '__main__':
@@ -45,7 +48,7 @@ if __name__ == '__main__':
 
     feature_path=os.path.join(script_path,'..','retrained','Km_features_11722_PreKcat.pkl')
     
-    if os.path.exists(feature_path):
+    if not os.path.exists(feature_path):
         smiles_input = smiles_to_vec(smiles, device=device)
         sequence_input = Seq_to_vec(sequence, device=device)
         feature = np.concatenate((smiles_input, sequence_input), axis=1)
