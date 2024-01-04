@@ -148,8 +148,7 @@ class WordVocab(Vocab):
 
     @staticmethod
     def load_vocab(vocab_path: str) -> 'WordVocab':
-        with open(vocab_path, "rb") as f:
-            return pickle.load(f)
+            return pickle.load(open(vocab_path, "rb"))
 
 
 def main():

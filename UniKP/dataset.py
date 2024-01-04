@@ -1,10 +1,7 @@
-import random
-import pandas as pd
 import torch
-from torch.utils.data import Dataset, DataLoader
-
+from torch.utils.data import Dataset
 from UniKP.enumerator import SmilesEnumerator
-from UniKP.utils import split
+
 
 PAD = 0
 MAX_LEN = 220
@@ -15,6 +12,7 @@ class Randomizer(object):
         self.sme = SmilesEnumerator()
     
     def __call__(self, sm):
+        from UniKP.utils import split
         sm_r = self.sme.randomize_smiles(sm) # Random transoform
         if sm_r is None:
             sm_spaced = split(sm) # Spacing

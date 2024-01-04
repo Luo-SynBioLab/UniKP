@@ -84,7 +84,7 @@ To use this project, first clone the repo on your device using the command below
 - **For users who want to use the deep learning model for prediction, please run these command lines at the terminal:**
   - (1). Create and activate enviroment
   
-         conda create -n UniKP python>=3.9 -y
+         conda create -n UniKP 'python>=3.9,<3.12' -y
          conda activate UniKP
 
   - (2). Install UniKP
@@ -92,7 +92,7 @@ To use this project, first clone the repo on your device using the command below
          pip install git+https://github.com/YaoYinYing/UniKP.git@pip-installable
 
   - (3). Fetch ProtT5 XL weights and UniKP pretrained weight
-         # set costomized download path (optional, if set, write these statements into shell profile like `.bashrc` or `.zshrc`)
+         # set costomized download path (optional. If set, write these statements into shell profile like `.bashrc` or `.zshrc`)
          export PROT_T5_XL_UNIREF50_WEIGHT=/path/to/ml/weights/
          export UNIKP_PRETRAINED_WEIGHT=/path/to/ml/weights/
 
@@ -106,46 +106,7 @@ To use this project, first clone the repo on your device using the command below
 **All predicted values have been logarithmically transformed with a base of 10. Remember to revert the transformation.**
 
 ```
-import torch
-from UniKP.build_vocab import WordVocab
-from UniKP.pretrain_trfm import TrfmSeq2seq
-from UniKP.utils import split,smiles_to_vec, Seq_to_vec, DEFAULT_UNIKP_WEIGHT
-# build_vocab, pretrain_trfm, utils packages are from SMILES Transformer
-import os
-import re
-import gc
-import numpy as np
-import pandas as pd
-import pickle
-import math
 
-
-if __name__ == '__main__':
-    sequences = ['MEDIPDTSRPPLKYVKGIPLIKYFAEALESLQDFQAQPDDLLISTYPKSGTTWVSEILDMIYQDGDVEKCRRAPVFIRVPFLEFKA'
-                 'PGIPTGLEVLKDTPAPRLIKTHLPLALLPQTLLDQKVKVVYVARNAKDVAVSYYHFYRMAKVHPDPDTWDSFLEKFMAGEVSYGSW'
-                 'YQHVQEWWELSHTHPVLYLFYEDMKENPKREIQKILKFVGRSLPEETVDLIVQHTSFKEMKNNSMANYTTLSPDIMDHSISAFMRK'
-                 'GISGDWKTTFTVAQNERFDADYAKKMEGCGLSFRTQL']
-    Smiles = ['OC1=CC=C(C[C@@H](C(O)=O)N)C=C1']
-    seq_vec = Seq_to_vec(sequences)
-    smiles_vec = smiles_to_vec(Smiles)
-    fused_vector = np.concatenate((smiles_vec, seq_vec), axis=1)
-
-    ###### you should place downloaded model into this directory.
-    # For kcat
-    with open(os.path.join(DEFAULT_UNIKP_WEIGHT,'UniKP_for_kcat.pkl'), "rb") as f:
-        model = pickle.load(f)
-    # For Km
-    # with open(os.path.join(DEFAULT_UNIKP_WEIGHT,'UniKP_for_Km.pkl'), "rb") as f:
-    #     model = pickle.load(f)
-    # For kcat/Km
-    # with open(os.path.join(DEFAULT_UNIKP_WEIGHT,'UniKP_for_kcat_Km.pkl'), "rb") as f:
-    #     model = pickle.load(f)
-    
-    Pre_label = model.predict(fused_vector)
-    Pre_label_pow = [math.pow(10, Pre_label[i]) for i in range(len(Pre_label))]
-    print(len(Pre_label))
-    res = pd.DataFrame({'sequences': sequences, 'Smiles': Smiles, 'Pre_label': Pre_label})
-    res.to_excel('Kinetic_parameters_predicted_label.xlsx')
 ```
 
 <!-- This is optional and it is used to give the user info on how to use the project after installation. This could be added in the Installation section also. -->

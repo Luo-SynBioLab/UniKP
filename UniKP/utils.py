@@ -326,7 +326,7 @@ def validity(smiles):
 
 
 
-def smiles_to_vec(Smiles):
+def smiles_to_vec(Smiles, device=torch.device('cpu')):
     from UniKP.build_vocab import WordVocab
     from UniKP.pretrain_trfm import TrfmSeq2seq
     pad_index = 0
@@ -355,7 +355,7 @@ def smiles_to_vec(Smiles):
             x_seg.append(b)
         return torch.tensor(x_id), torch.tensor(x_seg)
     trfm = TrfmSeq2seq(len(vocab), 256, len(vocab), 4)
-    trfm.load_state_dict(torch.load(os.path.join(dir_path,'trfm_12_23000.pkl')))
+    trfm.load_state_dict(torch.load(os.path.join(dir_path,'trfm_12_23000.pkl'),map_location=device))
     trfm.eval()
     x_split = [split(sm) for sm in Smiles]
     xid, xseg = get_array(x_split)
@@ -363,7 +363,11 @@ def smiles_to_vec(Smiles):
     return X
 
 
-def Seq_to_vec(Sequence, prot_t5_xl_uniref50=os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,'prot_t5_xl_uniref50','prot_t5_xl_uniref50')):
+def Seq_to_vec(
+        Sequence, 
+        prot_t5_xl_uniref50=os.path.join(DEFAULT_PROT_T5_XL_UNIREF50_WEIGHT,'prot_t5_xl_uniref50','prot_t5_xl_uniref50'),
+        device=torch.device('cpu')
+        ):
     from transformers import T5EncoderModel, T5Tokenizer
     for i in range(len(Sequence)):
         if len(Sequence[i]) > 1000:
@@ -378,9 +382,7 @@ def Seq_to_vec(Sequence, prot_t5_xl_uniref50=os.path.join(DEFAULT_PROT_T5_XL_UNI
     tokenizer = T5Tokenizer.from_pretrained(prot_t5_xl_uniref50, do_lower_case=False)
     model = T5EncoderModel.from_pretrained(prot_t5_xl_uniref50)
     gc.collect()
-    print(torch.cuda.is_available())
-    # 'cuda:0' if torch.cuda.is_available() else
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     model = model.to(device)
     model = model.eval()
     features = []
@@ -422,4 +424,5 @@ def get_lds_kernel_window(kernel, ks, sigma):
         kernel_window = list(map(laplace, np.arange(-half_ks, half_ks + 1))) / max(map(laplace, np.arange(-half_ks, half_ks + 1)))
     return kernel_window
 
-fetch_weights()
+if __name__ == '__main__':
+    fetch_weights()
