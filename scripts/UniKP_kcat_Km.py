@@ -42,7 +42,7 @@ if __name__ == '__main__':
     feature = np.concatenate((smiles_input, sequence_input), axis=1)
     model_path=os.path.join(script_path,'..','retrained','Kcat_Km_features_910.pkl')
     
-    os.makedirs(os.dirname(model_path),exist_ok=True)
+    os.makedirs(os.path.dirname(model_path),exist_ok=True)
     with open(model_path, "wb") as f:
         pickle.dump(feature, f)
     feature = np.array(feature)
