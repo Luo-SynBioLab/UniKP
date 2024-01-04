@@ -42,16 +42,20 @@ if __name__ == '__main__':
     smiles = datasets['smiles']
     Label = datasets['log10_KM']
     print(len(smiles), len(Label))
-    smiles_input = smiles_to_vec(smiles,device=device)
-    sequence_input = Seq_to_vec(sequence,device=device)
-    feature = np.concatenate((smiles_input, sequence_input), axis=1)
+
+    feature_path=os.path.join(script_path,'..','retrained','Km_features_11722_PreKcat.pkl')
     
-    model_path=os.path.join(script_path,'..','retrained','Km_features_11722_PreKcat.pkl')
-    os.makedirs(os.path.dirname(model_path),exist_ok=True)
-    with open(model_path, "wb") as f:
-        pickle.dump(feature, f)
-    # with open("Km/Km_features_11722_PreKcat.pkl", "rb") as f:
-    #     feature = pickle.load(f)
+    if os.path.exists(feature_path):
+        smiles_input = smiles_to_vec(smiles, device=device)
+        sequence_input = Seq_to_vec(sequence, device=device)
+        feature = np.concatenate((smiles_input, sequence_input), axis=1)
+        os.makedirs(os.path.dirname(feature_path),exist_ok=True)
+        with open(feature_path, "wb") as f:
+            pickle.dump(feature, f)
+    else:
+        with open(feature_path, 'rb') as f:
+            feature=pickle.load(f)
+    
     feature = np.array(feature)
     Label = np.array(Label)
     Kcat_predict(feature, Label)

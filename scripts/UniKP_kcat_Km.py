@@ -30,6 +30,7 @@ def Kcat_predict(Ifeature, Label):
 
 
 if __name__ == '__main__':
+    device=device_picker()
     res = np.array(pd.read_excel(os.path.join(script_path,'..','datasets','kcat_km_samples.xlsx'), sheet_name='main')).T
     Smiles = res[1]
     sequences = res[2]
@@ -37,14 +38,17 @@ if __name__ == '__main__':
     for i in range(len(Value)):
         Value[i] = math.log(Value[i], 10)
     print(max(Value), min(Value))
-    smiles_input = smiles_to_vec(Smiles)
-    sequence_input = Seq_to_vec(sequences)
-    feature = np.concatenate((smiles_input, sequence_input), axis=1)
-    model_path=os.path.join(script_path,'..','retrained','Kcat_Km_features_910.pkl')
-    
-    os.makedirs(os.path.dirname(model_path),exist_ok=True)
-    with open(model_path, "wb") as f:
-        pickle.dump(feature, f)
+    feature_path=os.path.join(script_path,'..','retrained','Kcat_Km_features_910.pkl')
+    if os.path.exists(feature_path):
+        smiles_input = smiles_to_vec(Smiles, device=device)
+        sequence_input = Seq_to_vec(sequences, device=device)
+        feature = np.concatenate((smiles_input, sequence_input), axis=1)
+        os.makedirs(os.path.dirname(feature_path),exist_ok=True)
+        with open(feature_path, "wb") as f:
+            pickle.dump(feature, f)
+    else:
+        with open(feature_path, 'rb') as f:
+            feature=pickle.load(f)
     feature = np.array(feature)
     Label = np.array(Value)
     Kcat_predict(feature, Label)

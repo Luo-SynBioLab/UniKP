@@ -1,6 +1,7 @@
 import argparse
 import math
 import os
+import click
 
 import numpy as np
 import pandas as pd
@@ -91,22 +92,7 @@ class TrfmSeq2seq(nn.Module):
                 out = np.concatenate([out, self._encode(src[:,st:ed])], axis=0)
             return out
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--n_epoch', '-e', type=int, default=5, help='number of epochs')
-    parser.add_argument('--vocab', '-v', type=str, default='data/vocab.pkl', help='vocabulary (.pkl)')
-    parser.add_argument('--data', '-d', type=str, default='data/chembl_25.csv', help='train corpus (.csv)')
-    parser.add_argument('--out-dir', '-o', type=str, default='../result', help='output directory')
-    parser.add_argument('--name', '-n', type=str, default='ST', help='model name')
-    parser.add_argument('--seq_len', type=int, default=220, help='maximum length of the paired seqence')
-    parser.add_argument('--batch_size', '-b', type=int, default=8, help='batch size')
-    parser.add_argument('--n_worker', '-w', type=int, default=16, help='number of workers')
-    parser.add_argument('--hidden', type=int, default=256, help='length of hidden vector')
-    parser.add_argument('--n_layer', '-l', type=int, default=4, help='number of layers')
-    parser.add_argument('--n_head', type=int, default=4, help='number of attention heads')
-    parser.add_argument('--lr', type=float, default=1e-4, help='Adam learning rate')
-    parser.add_argument('--gpu', metavar='N', type=int, nargs='+', help='list of GPU IDs to use')
-    return parser.parse_args()
+
 
 
 def evaluate(model, test_loader, vocab):
@@ -122,28 +108,42 @@ def evaluate(model, test_loader, vocab):
         total_loss += loss.item()
     return total_loss / len(test_loader)
 
-def main():
-    args = parse_arguments()
+
+@click.command()
+@click.option('--n_epoch', '-e', type=int, default=5, help='number of epochs')
+@click.option('--vocab', '-v', type=str, default='data/vocab.pkl', help='vocabulary (.pkl)')
+@click.option('--data', '-d', type=str, default='data/chembl_25.csv', help='train corpus (.csv)')
+@click.option('--out-dir', '-o', type=str, default='../result', help='output directory')
+@click.option('--name', '-n', type=str, default='ST', help='model name')
+@click.option('--seq_len', type=int, default=220, help='maximum length of the paired sequence')
+@click.option('--batch_size', '-b', type=int, default=8, help='batch size')
+@click.option('--n_worker', '-w', type=int, default=16, help='number of workers')
+@click.option('--hidden', type=int, default=256, help='length of hidden vector')
+@click.option('--n_layer', '-l', type=int, default=4, help='number of layers')
+@click.option('--n_head', type=int, default=4, help='number of attention heads')
+@click.option('--lr', type=float, default=1e-4, help='Adam learning rate')
+@click.option('--gpu', metavar='N', type=int, nargs='+', help='list of GPU IDs to use')
+def main(n_epoch, vocab, data, out_dir, name, seq_len, batch_size, n_worker, hidden, n_layer, n_head, lr, gpu):
     assert torch.cuda.is_available()
 
     print('Loading dataset...')
-    vocab = WordVocab.load_vocab(args.vocab)
-    dataset = Seq2seqDataset(pd.read_csv(args.data)['canonical_smiles'].values, vocab)
+    vocab = WordVocab.load_vocab(vocab)
+    dataset = Seq2seqDataset(pd.read_csv(data)['canonical_smiles'].values, vocab)
     test_size = 10000
     train, test = torch.utils.data.random_split(dataset, [len(dataset)-test_size, test_size])
-    train_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=args.n_worker)
-    test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=args.n_worker)
+    train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=n_worker)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=n_worker)
     print('Train size:', len(train))
     print('Test size:', len(test))
     del dataset, train, test
 
-    model = TrfmSeq2seq(len(vocab), args.hidden, len(vocab), args.n_layer).cuda()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    model = TrfmSeq2seq(len(vocab), hidden, len(vocab), n_layer).cuda()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     print(model)
     print('Total parameters:', sum(p.numel() for p in model.parameters()))
 
     best_loss = None
-    for e in range(1, args.n_epoch):
+    for e in range(1, n_epoch):
         for b, sm in tqdm(enumerate(train_loader)):
             sm = torch.t(sm.cuda()) # (T,B)
             optimizer.zero_grad()

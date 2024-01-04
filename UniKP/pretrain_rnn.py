@@ -1,5 +1,6 @@
 import argparse
 import random
+import click
 import numpy as np
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -145,28 +146,6 @@ class RNNSeq2Seq(nn.Module):
                 out = np.concatenate([out, self._encode(src[:,st:ed])], axis=0)
             return out
         
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--n_epoch', '-e', type=int, default=20, help='number of epochs')
-    parser.add_argument('--vocab', '-v', type=str, default='data/vocab.pkl', help='vocabulary (.pkl)')
-    parser.add_argument('--train_data', type=str, default='data/chembl24_bert_train.csv', help='train corpus (.csv)')
-    parser.add_argument('--test_data', type=str, default='data/chembl24_bert_test.csv', help='test corpus (.csv)')
-    parser.add_argument('--out-dir', '-o', type=str, default='../result', help='output directory')
-    parser.add_argument('--name', '-n', type=str, default='ST', help='model name')
-    parser.add_argument('--seq_len', type=int, default=220, help='maximum length of the paired seqence')
-    parser.add_argument('--batch_size', '-b', type=int, default=16, help='batch size')
-    parser.add_argument('--n_worker', '-w', type=int, default=16, help='number of workers')
-    parser.add_argument('--hidden', type=int, default=256, help='length of hidden vector')
-    parser.add_argument('--n_layer', '-l', type=int, default=8, help='number of layers')
-    parser.add_argument('--n_head', type=int, default=8, help='number of attention heads')
-    parser.add_argument('--dropout', '-d', type=float, default=0.1, help='dropout rate')
-    parser.add_argument('--lr', type=float, default=1e-4, help='Adam learning rate')
-    parser.add_argument('--lr-decay', type=int, default=50000, help='lr decay step size')
-    parser.add_argument('--log-freq', type=int, default=100, help='log frequency')
-    parser.add_argument('--gpu', metavar='N', type=int, nargs='+', help='list of GPU IDs to use')
-    parser.add_argument('--checkpoint', '-c', type=str, default=None, help='Parameter to load')
-    parser.add_argument('-grad_clip', type=float, default=10.0, help='in case of gradient explosion')
-    return parser.parse_args()
 
 def evaluate(model, val_loader, vocab):
     model.eval()
@@ -181,27 +160,47 @@ def evaluate(model, val_loader, vocab):
         total_loss += loss.item()
     return total_loss / len(val_loader)
 
-def main():
-    args = parse_arguments()
+@click.command()
+@click.option('--n_epoch', '-e', type=int, default=20, help='number of epochs')
+@click.option('--vocab', '-v', type=str, default='data/vocab.pkl', help='vocabulary (.pkl)')
+@click.option('--train_data', type=str, default='data/chembl24_bert_train.csv', help='train corpus (.csv)')
+@click.option('--test_data', type=str, default='data/chembl24_bert_test.csv', help='test corpus (.csv)')
+@click.option('--out-dir', '-o', type=str, default='../result', help='output directory')
+@click.option('--name', '-n', type=str, default='ST', help='model name')
+@click.option('--seq_len', type=int, default=220, help='maximum length of the paired sequence')
+@click.option('--batch_size', '-b', type=int, default=16, help='batch size')
+@click.option('--n_worker', '-w', type=int, default=16, help='number of workers')
+@click.option('--hidden', type=int, default=256, help='length of hidden vector')
+@click.option('--n_layer', '-l', type=int, default=8, help='number of layers')
+@click.option('--n_head', type=int, default=8, help='number of attention heads')
+@click.option('--dropout', '-d', type=float, default=0.1, help='dropout rate')
+@click.option('--lr', type=float, default=1e-4, help='Adam learning rate')
+@click.option('--lr-decay', type=int, default=50000, help='lr decay step size')
+@click.option('--log-freq', type=int, default=100, help='log frequency')
+@click.option('--gpu', metavar='N', type=int, nargs='+', help='list of GPU IDs to use')
+@click.option('--checkpoint', '-c', type=str, default=None, help='Parameter to load')
+@click.option('-grad_clip', type=float, default=10.0, help='in case of gradient explosion')
+def main(n_epoch, vocab, train_data, test_data, out_dir, name, seq_len, batch_size, n_worker, hidden, n_layer, n_head, dropout, lr, lr_decay, log_freq, gpu, checkpoint, grad_clip):
+
     hidden_size = 256
     embed_size = 256
     assert torch.cuda.is_available()
 
-    vocab = WordVocab.load_vocab(args.vocab)
+    vocab = WordVocab.load_vocab(vocab)
     print("[!] Instantiating models...")
     encoder = Encoder(len(vocab), embed_size, hidden_size, n_layers=3, dropout=0.5)
     decoder = Decoder(embed_size, hidden_size, len(vocab), n_layers=3, dropout=0.5)
     model = RNNSeq2Seq(encoder, decoder).cuda()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    train_dataset = Seq2seqDataset(args.train_data, vocab)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.n_worker)
-    val_dataset = Seq2seqDataset(args.test_data, vocab, is_train=False)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.n_worker)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    train_dataset = Seq2seqDataset(train_data, vocab)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=n_worker)
+    val_dataset = Seq2seqDataset(test_data, vocab, is_train=False)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=n_worker)
     print(model)
     print('Total parameters:', sum(p.numel() for p in model.parameters()))
 
     best_loss = None
-    for e in range(1, args.n_epoch):
+    for e in range(1, n_epoch):
         for b,data in tqdm(enumerate(train_loader)):
             model.train()
             sm1, sm2 = torch.t(data[0].cuda()), torch.t(data[1].cuda()) # (T,B)
@@ -210,7 +209,7 @@ def main():
             loss = F.nll_loss(output[1:].view(-1, len(vocab)),
                     sm2[1:].contiguous().view(-1), ignore_index=PAD)
             loss.backward()
-            clip_grad_norm_(model.parameters(), args.grad_clip)
+            clip_grad_norm_(model.parameters(), grad_clip)
             optimizer.step()
             if b%100==0:
                 print('Train {:3d}: iter {:5d} | loss {:.3f} | ppl {:.3f}'.format(e, b, loss.item(), math.exp(loss.item())))
