@@ -10,7 +10,6 @@ import pandas as pd
 import random
 import pickle
 import math
-import torch
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -35,7 +34,7 @@ def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organi
                             'Organism': Organism_new, 'Substrate': Substrate_new, 'Type': Type_new,
                             'Label': Label, 'Predict_Label': Pre_all_label, 'Training or test': Training_or_test})
 
-        res.to_excel('PreKcat_new/'+str(i+1)+'_all_samples_metrics.xlsx')
+        res.to_excel(str(i+1)+'_all_samples_metrics.xlsx')
 
 
 if __name__ == '__main__':
@@ -61,6 +60,7 @@ if __name__ == '__main__':
     smiles_input = smiles_to_vec(Smiles, device=device)
     sequence_input = Seq_to_vec(sequence, device=device)
     feature = np.concatenate((smiles_input, sequence_input), axis=1)
+
     model_path=os.path.join(script_path,'..','retrained','features_16838_PreKcat.pkl')
     os.makedirs(os.dirname(model_path),exist_ok=True)
     with open(model_path, "wb") as f:

@@ -1,3 +1,6 @@
+import os
+from UniKP.build_vocab import WordVocab
+from UniKP.pretrain_trfm import TrfmSeq2seq
 import numpy as np
 from sklearn.ensemble import ExtraTreesRegressor
 
@@ -8,7 +11,10 @@ import random
 import pickle
 from sklearn.model_selection import train_test_split
 
+from UniKP.utils import Seq_to_vec, device_picker, smiles_to_vec
 
+
+script_path = os.path.dirname(os.path.realpath(__file__))
 
 def Kcat_predict(Ifeature_ini, Label_ini):
     Myseed = random.randint(0, 1000)
@@ -27,7 +33,8 @@ def Kcat_predict(Ifeature_ini, Label_ini):
 
 if __name__ == '__main__':
     # Dataset Load
-    with open('Km/Km_test_11722.pkl', 'rb') as file:
+    device=device_picker()
+    with open(os.path.join(script_path,'..','datasets','Km_test_11722.pkl'), 'rb') as file:
         datasets = pickle.load(file)
     # datasets = datasets
     # print(datasets)
@@ -35,13 +42,16 @@ if __name__ == '__main__':
     smiles = datasets['smiles']
     Label = datasets['log10_KM']
     print(len(smiles), len(Label))
-    # smiles_input = smiles_to_vec(smiles)
-    # sequence_input = Seq_to_vec(sequence)
-    # feature = np.concatenate((smiles_input, sequence_input), axis=1)
-    # with open("Km/Km_features_11722_PreKcat.pkl", "wb") as f:
-    #     pickle.dump(feature, f)
-    with open("Km/Km_features_11722_PreKcat.pkl", "rb") as f:
-        feature = pickle.load(f)
+    smiles_input = smiles_to_vec(smiles,device=device)
+    sequence_input = Seq_to_vec(sequence,device=device)
+    feature = np.concatenate((smiles_input, sequence_input), axis=1)
+    
+    model_path=os.path.join(script_path,'..','retrained','Km_features_11722_PreKcat.pkl')
+    os.makedirs(os.path.dirname(model_path),exist_ok=True)
+    with open(model_path, "wb") as f:
+        pickle.dump(feature, f)
+    # with open("Km/Km_features_11722_PreKcat.pkl", "rb") as f:
+    #     feature = pickle.load(f)
     feature = np.array(feature)
     Label = np.array(Label)
     Kcat_predict(feature, Label)
