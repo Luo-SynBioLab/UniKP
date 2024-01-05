@@ -1,15 +1,18 @@
 #! bash
 source activate UniKP
 
-echo Retraining Kcat ...
-python /repo/UniKP/scripts/UniKP_kcat.py
+run_dir=$(readlink -f $(dirname $0))
 
-python /repo/UniKP/scripts/UniKP_kcat_model.py
+echo Retraining Kcat ...
+python ${run_dir}/UniKP_kcat.py
+python ${run_dir}/UniKP_kcat_model.py
 
 echo Retraining Km ...
-python /repo/UniKP/scripts/UniKP_Km.py
+python ${run_dir}/UniKP_Km.py
+python ${run_dir}/UniKP_Km_model.py
 
 echo Retraining Kcat/Km ...
-python /repo/UniKP/scripts/UniKP_kcat_Km.py
+python ${run_dir}/UniKP_kcat_Km.py
+python ${run_dir}/UniKP_kcat_Km_model.py
 
 echo Done

@@ -2,23 +2,14 @@ import os
 from UniKP.build_vocab import WordVocab
 from UniKP.pretrain_trfm import TrfmSeq2seq
 import json
-from joblib import parallel_backend
-from sklearn.ensemble import ExtraTreesRegressor
+
 import numpy as np
 import pickle
 import math
-from UniKP.utils import Seq_to_vec, device_picker, smiles_to_vec
+from UniKP.utils import Seq_to_vec, device_picker, smiles_to_vec, save_models
+
 
 script_path = os.path.dirname(os.path.realpath(__file__))
-
-def Kcat_predict(Ifeature, Label):
-    for i in range(5):
-        model = ExtraTreesRegressor()
-        print(f'Fitting at #{i} round...')
-        with parallel_backend('loky', n_jobs=os.cpu_count()):
-            model.fit(Ifeature, Label)
-            with open(os.path.join(script_path,'..','retrained',f'kcat_{str(i)}_model.pkl'), "wb") as f:
-                pickle.dump(model, f)
 
 
 if __name__ == '__main__':
@@ -50,4 +41,8 @@ if __name__ == '__main__':
     print(len(Label_new))
     Label_new = np.array(Label_new)
     feature_new = np.array(feature_new)
-    Kcat_predict(feature_new, Label_new)
+    save_models(
+        feature_new, 
+        Label_new,
+        model_label='kcat', 
+        save_dir=os.path.dirname(feature_path))

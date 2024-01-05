@@ -3,6 +3,7 @@ import re
 import gc
 import torch
 import math
+import pickle
 import torch.nn as nn
 from rdkit import Chem
 from rdkit import rdBase
@@ -10,7 +11,10 @@ from rdkit import rdBase
 import pooch
 import zipfile
 
+
 import numpy as np
+from joblib import parallel_backend
+from sklearn.ensemble import ExtraTreesRegressor
 
 rdBase.DisableLog('rdApp.*')
 
@@ -436,6 +440,15 @@ def device_picker(device: str = ''):
         device = torch.device("cpu")
     
     return device
+
+def save_models(Ifeature, Label, round=5, model_label='kcat',save_dir='.',ncpu=os.cpu_count()):
+    for i in range(round):
+        model = ExtraTreesRegressor()
+        print(f'Fitting at #{i} round...')
+        with parallel_backend('loky', n_jobs=ncpu):
+            model.fit(Ifeature, Label)
+            with open(os.path.join(save_dir,f'{model_label}_{str(i)}_model.pkl'), "wb") as f:
+                pickle.dump(model, f)
 
 if __name__ == '__main__':
     fetch_weights()
