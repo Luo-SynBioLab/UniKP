@@ -86,12 +86,14 @@ To use this project, first clone the repo on your device using the command below
   
          conda create -n UniKP 'python>=3.9,<3.12' -y
          conda activate UniKP
+         git clone https://github.com/YaoYinYing/UniKP.git
+         git checkout pip-installable
 
   - (2). Install UniKP
          
          pip install git+https://github.com/YaoYinYing/UniKP.git@pip-installable
 
-  - (3). Fetch ProtT5 XL weights and UniKP pretrained weight
+  - (3). Fetch ProtT5 XL weights and UniKP pretrained weight (original weights provied by the authors)
   
          # set costomized download path (optional. If set, write these statements into shell profile like `.bashrc` or `.zshrc`)
          export PROT_T5_XL_UNIREF50_WEIGHT=/path/to/ml/weights/
@@ -106,9 +108,35 @@ To use this project, first clone the repo on your device using the command below
 
 **All predicted values have been logarithmically transformed with a base of 10. Remember to revert the transformation.**
 
+```bash
+# get help message
+python /repo/UniKP/examples/inference.py --help
+Usage: inference.py [OPTIONS]
+
+Options:
+  -s, --sequence TEXT   Protein Squence input  [required]
+  -m, --smiles TEXT     SMILES input  [required]
+  -w, --weight TEXT     Weight model, `Km`, `Kcat`, or `Kcat_Km`  [required]
+  -d, --device TEXT     Device to use. `cuda` for CUDA, `mps` for Apple
+                        Silicon MPS, `cpu` for pure CPU. If unset, device is
+                        picked automatically.
+  -j, --nprocs INTEGER  Number of processors
+  --help                Show this message and exit.
+```
+```bash
+python /repo/UniKP/examples/inference.py -s 'MEDIPDTSRPPLKYVKGIPLIKYFAEALESLQDFQAQPDDLLISTYPKSGTTWVSEILDMIYQDGDVEKCRRAPVFIRVPFLEFKAPGIPTGLEVLKDTPAPRLIKTHLPLALLPQTLLDQKVKVVYVARNAKDVAVSYYHFYRMAKVHPDPDTWDSFLEKFMAGEVSYGSWYQHVQEWWELSHTHPVLYLFYEDMKENPKREIQKILKFVGRSLPEETVDLIVQHTSFKEMKNNSMANYTTLSPDIMDHSISAFMRKGISGDWKTTFTVAQNERFDADYAKKMEGCGLSFRTQL' -m 'OC1=CC=C(C[C@@H](C(O)=O)N)C=C1' -w 'Kcat' -d cuda
 ```
 
+- Retraining:
+  
+This takes long time, depending on the device you are using.
+```bash
+bash /repo/UniKP/scripts/retraining.sh
 ```
+
+- Fine-tuning:
+**Work in Progress**
+
 
 <!-- This is optional and it is used to give the user info on how to use the project after installation. This could be added in the Installation section also. -->
 

@@ -428,11 +428,11 @@ def get_lds_kernel_window(kernel, ks, sigma):
         kernel_window = list(map(laplace, np.arange(-half_ks, half_ks + 1))) / max(map(laplace, np.arange(-half_ks, half_ks + 1)))
     return kernel_window
 
-def device_picker(device: str = ''):
-    if (device.startswith('cuda') or not device) and torch.cuda.is_available():
+def device_picker(device: str = '') -> torch.device:
+    if (not device or device.startswith('cuda')) and torch.cuda.is_available():
         print('Use CUDA')
         device = torch.device('cuda')
-    elif (device.startswith('mps') or not device) and torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    elif (not device or device.startswith('mps')) and torch.backends.mps.is_available() and torch.backends.mps.is_built():
         print('Use MPS')
         device = torch.device("mps")
     else:
