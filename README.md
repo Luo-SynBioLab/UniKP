@@ -114,14 +114,18 @@ python /repo/UniKP/examples/inference.py --help
 Usage: inference.py [OPTIONS]
 
 Options:
-  -s, --sequence TEXT   Protein Squence input  [required]
-  -m, --smiles TEXT     SMILES input  [required]
-  -w, --weight TEXT     Weight model, `Km`, `Kcat`, or `Kcat_Km`  [required]
-  -d, --device TEXT     Device to use. `cuda` for CUDA, `mps` for Apple
-                        Silicon MPS, `cpu` for pure CPU. If unset, device is
-                        picked automatically.
-  -j, --nprocs INTEGER  Number of processors
-  --help                Show this message and exit.
+  -s, --sequence TEXT             Protein Squence input  [required]
+  -m, --smiles TEXT               SMILES input  [required]
+  -w, --weight [Km|Kcat|Kcat_Km|All]
+                                  Weight model, `Km`, `Kcat`, `Kcat_Km` or
+                                  `All` for all.  [required]
+  -p, --prefix TEXT               Prefix label of this prediction
+  -o, --output_dir TEXT           Output directory
+  -d, --device TEXT               Device to use. `cuda` for CUDA, `mps` for
+                                  Apple Silicon MPS, `cpu` for pure CPU. If
+                                  unset, device is picked automatically.
+  -j, --nprocs INTEGER            Number of processors
+  --help                          Show this message and exit.
 ```
 ```bash
 python /repo/UniKP/examples/inference.py -s 'MEDIPDTSRPPLKYVKGIPLIKYFAEALESLQDFQAQPDDLLISTYPKSGTTWVSEILDMIYQDGDVEKCRRAPVFIRVPFLEFKAPGIPTGLEVLKDTPAPRLIKTHLPLALLPQTLLDQKVKVVYVARNAKDVAVSYYHFYRMAKVHPDPDTWDSFLEKFMAGEVSYGSWYQHVQEWWELSHTHPVLYLFYEDMKENPKREIQKILKFVGRSLPEETVDLIVQHTSFKEMKNNSMANYTTLSPDIMDHSISAFMRKGISGDWKTTFTVAQNERFDADYAKKMEGCGLSFRTQL' -m 'OC1=CC=C(C[C@@H](C(O)=O)N)C=C1' -w 'Kcat' -d cuda
@@ -132,6 +136,10 @@ python /repo/UniKP/examples/inference.py -s 'MEDIPDTSRPPLKYVKGIPLIKYFAEALESLQDFQ
 This takes long time, depending on the device you are using.
 ```bash
 bash /repo/UniKP/scripts/retraining.sh
+
+cp /repo/UniKP/retrained/Km_0_model.pkl $UNIKP_PRETRAINED_WEIGHT/UniKP_for_Km.pkl
+cp /repo/UniKP/retrained/kcat_0_model.pkl $UNIKP_PRETRAINED_WEIGHT/UniKP_for_kcat.pkl
+cp /repo/UniKP/retrained/Kcat_Km_0_model.pkl $UNIKP_PRETRAINED_WEIGHT/UniKP_for_kcat_Km.pkl
 ```
 
 - Fine-tuning:
