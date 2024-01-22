@@ -25,9 +25,9 @@ DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_URL = 'doi:10.5281/zenodo.4644187/prot_t5_xl
 DEFAULT_PROT_T5_XL_UNI_REF50_WEIGHT_MD5 = 'md5:ab11a7eddfbaff5784effd41380b482a'
 
 DEFAULT_UNIKP_WEIGTHS_URL={
-    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20Km.pkl': 'md5:3e5e29dfabb0648448cb2fcd6f7cedd5',
-    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat.pkl':'md5:bf4e2c87deec0da8359ecb767e562bf2',
-    'https://huggingface.co/HanselYu/UniKP/resolve/main/UniKP%20for%20kcat_Km.pkl': 'md5:bc598e880e0893bf25f8bfb27074ccac'
+    'https://github.com/YaoYinYing/UniKP/releases/download/v0.0.1-retrained-weights/UniKP_for_Km.pkl': 'md5:8f3aca0997b62e698e6a926255e19a1e',
+    'https://github.com/YaoYinYing/UniKP/releases/download/v0.0.1-retrained-weights/UniKP_for_kcat.pkl':'md5:d8a5d5576d1f92a2e21ae917d54639d9',
+    'https://github.com/YaoYinYing/UniKP/releases/download/v0.0.1-retrained-weights/UniKP_for_kcat_Km.pkl': 'md5:5064b30f752a631258a27e302839ec08'
     }
 
 CUSTOMIZED_PROT_T5_XL_UNIREF50_WEIGHT=os.getenv('PROT_T5_XL_UNIREF50_WEIGHT')
