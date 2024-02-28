@@ -191,11 +191,9 @@ def Seq_to_vec(Sequence):
             seq_emd = embedding[seq_num][:seq_len - 1]
             features.append(seq_emd)
     features_normalize = np.zeros([len(features), len(features[0][0])], dtype=float)
-    for i in range(len(features)):
-        for k in range(len(features[0][0])):
-            for j in range(len(features[i])):
-                features_normalize[i][k] += features[i][j][k]
-            features_normalize[i][k] /= len(features[i])
+    features_array = np.array(features)
+    for n in range(len(features)):
+        features_normalize[n] = features_array[n].mean(axis=0, dtype=np.float64)
     return features_normalize
 
 
