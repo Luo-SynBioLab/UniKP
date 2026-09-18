@@ -82,6 +82,31 @@ Notice:
 
 - We have included pretrained molecular language modoel *SMILES Transformer* in this repository to generate substrate representation, the link is also provided on [SMILES Transformer](https://github.com/DSPsleeporg/smiles-transformer).
 
+**Repository layout and configuration**
+
+Every script resolves its paths through `unikp/paths.py`, so they can be run
+from any working directory:
+
+| What | Default location | Environment variable |
+|------|------------------|----------------------|
+| Input datasets | `datasets/` | `UNIKP_DATA_DIR` |
+| Results, feature caches, trained regressors | `results/` (created on demand) | `UNIKP_OUTPUT_DIR` |
+| ProtT5-XL-UniRef50 weights | `prot_t5_xl_uniref50/` | `UNIKP_PROTT5_DIR` |
+| Downloaded UniKP models | `UniKP/` | `UNIKP_MODEL_DIR` |
+| Torch device for ProtT5 | `cuda:0`, else CPU | `UNIKP_DEVICE` |
+
+Feature extraction runs automatically on the first execution of a script and
+is cached under `results/`; later runs reuse the cache. Extracting features
+for the full *k*<sub>cat</sub> dataset needs a GPU and takes a while, so run
+`UniKP_kcat.py` first if you intend to run several scripts.
+
+```
+python UniKP_kcat.py                        # 10 train/test splits + feature cache
+python UniKP_kcat_model.py                  # trained regressors under results/PreKcat_new/
+python Preprocessing.py                     # metrics over results/PreKcat_new/1_all_samples_metrics.xlsx
+python "Enviroment factors/UniKP_pH.py"     # EF-UniKP, first layer
+```
+
 <!-- *You might have noticed the **Back to top** button(if not, please notice, it's right there!). This is a good idea because it makes your README **easy to navigate.*** 
 
 The first one should be how to install(how to generally use your project or set-up for editing in their machine).
