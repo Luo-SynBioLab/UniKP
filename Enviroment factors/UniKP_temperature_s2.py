@@ -13,20 +13,22 @@ from sklearn.linear_model import LinearRegression
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path, require_output
+from unikp.seeding import set_global_seed
 
 TEMPERATURE_DATASET = 'Generated_degree_unified_smiles_572.xlsx'
 FEATURE_CACHE = ('degree', 'features_572_degree_PreKcat.pkl')
 BASELINE_MODEL = ('PreKcat_new', '0_model.pkl')
 
 
-def Kcat_predict(feature, pH, sequence, smiles, Label):
+def Kcat_predict(feature, pH, sequence, smiles, Label, seed):
     # Generate index
-    Train_Validation_index = random.sample(range(len(feature)), int(len(feature)*0.8))
+    rng = random.Random(seed)
+    Train_Validation_index = rng.sample(range(len(feature)), int(len(feature)*0.8))
     Test_index = []
     for i in range(len(feature)):
         if i not in Train_Validation_index:
             Test_index.append(i)
-    Validation_index = random.sample(Train_Validation_index, int(len(Train_Validation_index)*0.2))
+    Validation_index = rng.sample(Train_Validation_index, int(len(Train_Validation_index)*0.2))
     Train_index = []
     for i in range(len(feature)):
         if i not in Validation_index and i not in Test_index:
@@ -47,7 +49,7 @@ def Kcat_predict(feature, pH, sequence, smiles, Label):
     # First model
     print(feature[Train_index].shape, pH[Train_index].shape)
     model_1_input = np.concatenate((feature[Train_index], pH[Train_index]), axis=1)
-    model_first = ExtraTreesRegressor()
+    model_first = ExtraTreesRegressor(random_state=seed)
     model_first.fit(model_1_input, Label[Train_index])
     # Second model
     with open(require_output(*BASELINE_MODEL), "rb") as f:
@@ -82,6 +84,7 @@ def Kcat_predict(feature, pH, sequence, smiles, Label):
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     # Dataset Load
     database = np.array(pd.read_excel(data_path(TEMPERATURE_DATASET))).T
     sequence = database[1]
@@ -94,4 +97,4 @@ if __name__ == '__main__':
     pH = np.array(pH).reshape([len(Label), 1])
     feature = load_or_build_features(output_path(*FEATURE_CACHE), sequence, smiles)
     # Modelling
-    Kcat_predict(feature, pH, sequence, smiles, Label)
+    Kcat_predict(feature, pH, sequence, smiles, Label, seed)

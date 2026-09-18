@@ -94,6 +94,15 @@ from any working directory:
 | ProtT5-XL-UniRef50 weights | `prot_t5_xl_uniref50/` | `UNIKP_PROTT5_DIR` |
 | Downloaded UniKP models | `UniKP/` | `UNIKP_MODEL_DIR` |
 | Torch device for ProtT5 | `cuda:0`, else CPU | `UNIKP_DEVICE` |
+| Random seed | `42` | `UNIKP_SEED` |
+
+**Reproducibility.** Every script seeds `random`, `numpy`, the train/test
+split, the K-fold shuffle and the ExtraTrees fit from a single seed, and
+prints it on startup. Two runs with the same `UNIKP_SEED` produce identical
+results. Scripts that repeat a procedure (the ten splits in `UniKP_kcat.py`,
+the five regressors in `UniKP_kcat_model.py`) offset the seed per repeat, so
+the repeats still differ from one another while the set of them is
+reproducible.
 
 Feature extraction runs automatically on the first execution of a script and
 is cached under `results/`; later runs reuse the cache. Extracting features

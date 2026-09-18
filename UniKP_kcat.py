@@ -8,6 +8,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path
+from unikp.seeding import repeat_seed, set_global_seed
 
 KCAT_DATASET = 'Kcat_combination_0918_wildtype_mutant.json'
 # The cache holds one row per record in the JSON (17010); the label filter
@@ -15,15 +16,19 @@ KCAT_DATASET = 'Kcat_combination_0918_wildtype_mutant.json'
 FEATURE_CACHE = ('PreKcat_new', 'features_17010_PreKcat.pkl')
 
 
-def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organism_new, Substrate_new, Type_new):
+def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organism_new, Substrate_new, Type_new,
+                 seed):
     for i in range(10):
-        # Generate training or test set index
+        # Generate training or test set index.  Each of the ten repeats gets
+        # its own seed, so they still differ from one another but the set of
+        # ten is reproducible across runs.
+        rng = random.Random(repeat_seed(seed, i))
         ALL_index = [j for j in range(len(Ifeature))]
-        train_index = np.array(random.sample(ALL_index, int(len(ALL_index)*0.9)))
+        train_index = np.array(rng.sample(ALL_index, int(len(ALL_index)*0.9)))
         train_lookup = set(train_index.tolist())
         Training_or_test = np.array([0 if j in train_lookup else 1 for j in ALL_index])
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
-        model = ExtraTreesRegressor()
+        model = ExtraTreesRegressor(random_state=repeat_seed(seed, i))
         model.fit(Train_data, Train_label)
         Pre_all_label = model.predict(Ifeature)
         res = pd.DataFrame({'sequence': sequence_new, 'smiles': Smiles_new, 'ECNumber': ECNumber_new,
@@ -33,6 +38,7 @@ def Kcat_predict(Ifeature, Label, sequence_new, Smiles_new, ECNumber_new, Organi
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     # Dataset Load
     with open(data_path(KCAT_DATASET), 'r') as file:
         datasets = json.load(file)
@@ -77,4 +83,4 @@ if __name__ == '__main__':
     feature_new = np.array(feature_new)
     # Modelling
     Kcat_predict(feature_new, Label_new, sequence_new, Smiles_new, ECNumber_new,
-                Organism_new, Substrate_new, Type_new)
+                Organism_new, Substrate_new, Type_new, seed)

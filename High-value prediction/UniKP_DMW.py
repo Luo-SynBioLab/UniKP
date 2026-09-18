@@ -12,6 +12,7 @@ from sklearn.model_selection import KFold
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path
+from unikp.seeding import set_global_seed
 
 KCAT_DATASET = 'Kcat_combination_0918_wildtype_mutant.json'
 # One row per record in the JSON (17010); the label filter below leaves 16838.
@@ -19,14 +20,14 @@ FEATURE_CACHE = ('PreKcat_new', 'features_17010_PreKcat.pkl')
 
 
 
-def Kcat_predict(Ifeature, Label, weights):
-    kf = KFold(n_splits=5, shuffle=True)
+def Kcat_predict(Ifeature, Label, weights, seed):
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     All_pre_label = []
     All_real_label = []
     for train_index, test_index in kf.split(Ifeature, Label):
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         Test_data, Test_label = Ifeature[test_index], Label[test_index]
-        model = ExtraTreesRegressor()
+        model = ExtraTreesRegressor(random_state=seed)
         # , sample_weight=weights[train_index]
         model.fit(Train_data, Train_label, sample_weight=weights[train_index])
         Pre_label = model.predict(Test_data)
@@ -37,6 +38,7 @@ def Kcat_predict(Ifeature, Label, weights):
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     # Dataset Load
     with open(data_path(KCAT_DATASET), 'r') as file:
         datasets = json.load(file)
@@ -90,4 +92,4 @@ if __name__ == '__main__':
     # for i in range(len(weights)):
     #     weights[i] /= sum_weights
     # Modelling
-    Kcat_predict(feature_new, Label_new, weights)
+    Kcat_predict(feature_new, Label_new, weights, seed)

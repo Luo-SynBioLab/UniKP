@@ -7,19 +7,20 @@ from sklearn.model_selection import KFold
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path
+from unikp.seeding import set_global_seed
 
 KCAT_KM_DATASET = 'kcat_km_samples.xlsx'
 FEATURE_CACHE = ('Kcat_Km', 'Kcat_Km_features_910.pkl')
 
 
-def Kcat_predict(Ifeature, Label):
-    kf = KFold(n_splits=5, shuffle=True)
+def Kcat_predict(Ifeature, Label, seed):
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     All_pre_label = []
     All_real_label = []
     for train_index, test_index in kf.split(Ifeature, Label):
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         Test_data, Test_label = Ifeature[test_index], Label[test_index]
-        model = ExtraTreesRegressor()
+        model = ExtraTreesRegressor(random_state=seed)
         model.fit(Train_data, Train_label)
         Pre_label = model.predict(Test_data)
         All_pre_label.extend(Pre_label)
@@ -29,6 +30,7 @@ def Kcat_predict(Ifeature, Label):
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     res = np.array(pd.read_excel(data_path(KCAT_KM_DATASET), sheet_name='main')).T
     Smiles = res[1]
     sequences = res[2]
@@ -39,4 +41,4 @@ if __name__ == '__main__':
     feature = load_or_build_features(output_path(*FEATURE_CACHE), sequences, Smiles)
     feature = np.array(feature)
     Label = np.array(Value)
-    Kcat_predict(feature, Label)
+    Kcat_predict(feature, Label, seed)

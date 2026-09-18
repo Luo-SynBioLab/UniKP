@@ -1,8 +1,29 @@
-numpy
-pandas
-tqdm
-rdkit
-transformers
-SentencePiece
-scikit-learn
-openpyxl
+# Runtime dependencies for the UniKP scripts.
+#
+# Lower bounds only -- these are the oldest releases the code is known to
+# work with, not pins. Verified against numpy 2.4, pandas 3.0, scipy 1.17,
+# scikit-learn 1.9, torch 2.14, rdkit 2026.3, matplotlib 3.11.
+#
+# torch is listed here for completeness, but on a GPU machine install it
+# first from the index matching your CUDA version (see README), otherwise
+# pip resolves a build that may not match your driver.
+
+numpy>=1.20
+pandas>=1.3
+scipy>=1.7
+scikit-learn>=1.0
+torch>=1.10
+
+# ProtT5-XL-UniRef50; T5Tokenizer requires sentencepiece
+transformers>=4.20
+SentencePiece>=0.1.96
+
+# SMILES handling and the label-distribution plots
+rdkit>=2022.3
+matplotlib>=3.4
+
+# Excel I/O for the datasets and result tables
+openpyxl>=3.0
+
+# Progress bars in the SMILES Transformer pretraining scripts
+tqdm>=4.60

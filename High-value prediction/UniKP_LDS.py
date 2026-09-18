@@ -15,6 +15,7 @@ from sklearn.model_selection import KFold
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path
+from unikp.seeding import set_global_seed
 
 KCAT_DATASET = 'Kcat_combination_0918_wildtype_mutant.json'
 # One row per record in the JSON (17010); the label filter below leaves 16838.
@@ -37,9 +38,17 @@ def get_lds_kernel_window(kernel, ks, sigma):
 
 
 def Smooth_Label(Label_new):
-    labels = Label_new
-    for i in range(len(labels)):
-        labels[i] = labels[i] - min(labels)
+    # Shift the labels so the smallest is zero, then bin them.
+    #
+    # This used to be an in-place loop that recomputed min(labels) on every
+    # iteration, over the list it was modifying.  Once the loop reached the
+    # original minimum that element became 0, the running minimum became 0
+    # too, and every later element was shifted by nothing -- so only the
+    # elements up to the original argmin were actually shifted, and the bins
+    # (and therefore the re-weighting) were computed from a half-shifted
+    # array.  Take the offset once, and do not alias the caller's list.
+    offset = min(Label_new)
+    labels = [label - offset for label in Label_new]
     bin_index_per_label = [int(label*4) for label in labels]
     # print(bin_index_per_label)
     Nb = max(bin_index_per_label) + 1
@@ -57,14 +66,14 @@ def Smooth_Label(Label_new):
     return weights
 
 
-def Kcat_predict(Ifeature, Label, weights):
-    kf = KFold(n_splits=5, shuffle=True)
+def Kcat_predict(Ifeature, Label, weights, seed):
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     All_pre_label = []
     All_real_label = []
     for train_index, test_index in kf.split(Ifeature, Label):
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         Test_data, Test_label = Ifeature[test_index], Label[test_index]
-        model = ExtraTreesRegressor()
+        model = ExtraTreesRegressor(random_state=seed)
         # , sample_weight=weights[train_index]
         model.fit(Train_data, Train_label, sample_weight=weights[train_index])
         Pre_label = model.predict(Test_data)
@@ -75,6 +84,7 @@ def Kcat_predict(Ifeature, Label, weights):
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     # Dataset Load
     with open(data_path(KCAT_DATASET), 'r') as file:
         datasets = json.load(file)
@@ -122,4 +132,4 @@ if __name__ == '__main__':
     sl_label = [Label_new[i] for i in range(len(Label_new))]
     weights = Smooth_Label(sl_label)
     # Modelling
-    Kcat_predict(feature_new, Label_new, weights)
+    Kcat_predict(feature_new, Label_new, weights, seed)

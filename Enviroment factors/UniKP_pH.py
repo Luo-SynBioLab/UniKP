@@ -11,6 +11,7 @@ from sklearn.model_selection import KFold
 
 from unikp.features import load_or_build_features
 from unikp.paths import data_path, output_path
+from unikp.seeding import set_global_seed
 
 PH_DATASET = 'Generated_pH_unified_smiles_636.xlsx'
 # The cache holds the 2048-dim substrate + enzyme representation only; the
@@ -19,14 +20,14 @@ PH_DATASET = 'Generated_pH_unified_smiles_636.xlsx'
 FEATURE_CACHE = ('pH', 'features_636_pH_PreKcat.pkl')
 
 
-def Kcat_predict(Ifeature, Label):
-    kf = KFold(n_splits=5, shuffle=True)
+def Kcat_predict(Ifeature, Label, seed):
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     All_pre_label = []
     All_real_label = []
     for train_index, test_index in kf.split(Ifeature, Label):
         Train_data, Train_label = Ifeature[train_index], Label[train_index]
         Test_data, Test_label = Ifeature[test_index], Label[test_index]
-        model = ExtraTreesRegressor()
+        model = ExtraTreesRegressor(random_state=seed)
         model.fit(Train_data, Train_label)
         Pre_label = model.predict(Test_data)
         All_pre_label.extend(Pre_label)
@@ -36,6 +37,7 @@ def Kcat_predict(Ifeature, Label):
 
 
 if __name__ == '__main__':
+    seed = set_global_seed()
     # Dataset Load
     database = np.array(pd.read_excel(data_path(PH_DATASET))).T
     sequence = database[1]
@@ -49,4 +51,4 @@ if __name__ == '__main__':
     feature = load_or_build_features(output_path(*FEATURE_CACHE), sequence, smiles)
     feature = np.concatenate((feature, pH), axis=1)
     # Modelling
-    Kcat_predict(feature, Label)
+    Kcat_predict(feature, Label, seed)
