@@ -1,0 +1,9 @@
+# Results, feature caches and trained models written by the scripts
+results/
+
+# Downloaded model weights (see README Prerequisites)
+prot_t5_xl_uniref50/
+UniKP/
+
+__pycache__/
+*.pyc
